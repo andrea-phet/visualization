@@ -1,0 +1,6 @@
+question text up to this point
+
+first prediction, percentage, evidence, evidence, medium dimensional array
+second prediction, percentage, evidence, evidence, medium dimensional array
+…
+nth prediction, percentage, evidence, evidence, medium dimensional array

@@ -1,0 +1,7 @@
+This city's mass transit system's director, Paul Wiedefeld, undertook SafeTrack to restore reliability of the 
+Washington Metro, 34%, stations designed by Harry Weese, undertook SafeTrack, 0.001, 0.002, … , 0.300
+Baltimore, 31%, Paul Wiedefeld, This city's mass transit, 0.002, 0.004, … , 0.600
+… 
+Pokemon, 1%, This city’s, restore reliability, 0.601, 0.602, … 0.900
+
+
