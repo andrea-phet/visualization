@@ -1,0 +1,8 @@
+File ID,Question ID,Word,Guess,Probability,Evidence 1,Evidence 2
+file id,first question id,first word,first guess,probability,evidence,evidence,medium dimensional array
+file id,first question id,first word,second guess,probability,evidence,evidence,medium dimensional array
+...
+file id,first question id,first word,nth guess,probability,evidence,evidence,medium dimensional array
+file id,first question id,second word,first guess,probability,evidence,evidence,medium dimensional array
+...
+file id,first question id,last word,nth guess,probability,evidence,evidence,medium dimensional array

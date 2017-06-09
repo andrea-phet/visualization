@@ -1,5 +1,0 @@
-question text up to this point
-first guess, probability, evidence, evidence, medium dimensional array
-second guess, probability, evidence, evidence, medium dimensional array
-…
-nth guess, probability, evidence, evidence, medium dimensional array
