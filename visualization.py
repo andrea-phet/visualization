@@ -1,12 +1,13 @@
 import cairocffi as cairo
 import math
+import pickle
 
 WIDTH, HEIGHT = 600, 300
 
 surface = cairo.ImageSurface( cairo.FORMAT_ARGB32, WIDTH, HEIGHT )
 ctx = cairo.Context (surface)
 
-# my methods
+# my methods - idea: make an object that contains ctx as field and has these:
 
 def strip_last_word( string ):
 	words = string.split( ' ' )
@@ -36,15 +37,12 @@ def wrapped_text( text, x, y, width ):
 		lines = make_less( text, text, [], width )
 		for line in lines:
 			ctx.show_text( line )
-			ctx.move_to( x, y + text_height )
+			y += text_height + 2
+			ctx.move_to( x, y )
 
-# input
-question_text = "This city's mass transit system's director, Paul Wiedefeld, undertook SafeTrack to restore reliability of the"
-guesses = [
-	[ "Washington Metro", 34, "stations designed by Harry Weese", "undertook SafeTrack", 0.001, 0.002, 0.300 ],
-	[ "Baltimore", 31, "Paul Wiedefeld", "This city's mass transit", 0.002, 0.004, 0.600 ],
-	[ "Pokemon", 1, "This city's", "restore reliability", 0.601, 0.602, 0.900 ]
-]
+#data
+with open( 'files/qantatest.p', 'rb' ) as infile:
+	guesses = pickle.load( infile )
 
 #data
 points_2d = [
@@ -65,7 +63,7 @@ ctx.set_font_size(14)
 # display question text
 ctx.move_to( 10, 20 )
 ctx.set_source_rgb( 0, 0, 0 )
-wrapped_text( question_text, 10, 20, 400 )
+wrapped_text( guesses[0][0], 10, 20, 400 )
 
 ### 2D plot of possible answers ###
 
@@ -95,10 +93,14 @@ for point in points_2d:
 ### table of guesses and evidence ###
 ctx.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
 ctx.set_source_rgb( 0, 0, 0 )
-ctx.move_to( 100, 200 )
+ctx.move_to( 10, 200 )
 ctx.show_text( "Prediction")
-ctx.move_to( 300, 200 )
+ctx.move_to( 210, 200 )
 ctx.show_text( "Evidence")
+
+ctx.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL )
+ctx.move_to( 10, 220 )
+ctx.show_text( guesses[0][1] )
 
 
 # output to PNG
