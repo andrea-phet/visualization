@@ -2,11 +2,6 @@ import cairocffi as cairo
 import math
 import pickle
 
-WIDTH, HEIGHT = 600, 300
-
-surface = cairo.ImageSurface( cairo.FORMAT_ARGB32, WIDTH, HEIGHT )
-ctx = cairo.Context (surface)
-
 # my methods - idea: make an object that contains ctx as field and has these:
 
 def strip_last_word( string ):
@@ -44,39 +39,45 @@ def wrapped_text( text, x, y, width ):
 with open( 'files/qantatest.p', 'rb' ) as infile:
 	guesses = pickle.load( infile )
 
-# draw a background rectangle
-ctx.rectangle( 0, 0, WIDTH, HEIGHT )
-ctx.set_source_rgb( 1, 1, 1 )
-ctx.fill()
+WIDTH, HEIGHT = 600, 300
+for i in range( 0, 30 ):
 
-# set font
-ctx.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
-ctx.set_font_size(14)
+	surface = cairo.ImageSurface( cairo.FORMAT_ARGB32, WIDTH, HEIGHT )
+	ctx = cairo.Context (surface)
 
-# display question text
-ctx.move_to( 10, 20 )
-ctx.set_source_rgb( 0, 0, 0 )
-wrapped_text( guesses[0][0], 10, 20, 400 )
+	# draw a background rectangle
+	ctx.rectangle( 0, 0, WIDTH, HEIGHT )
+	ctx.set_source_rgb( 1, 1, 1 )
+	ctx.fill()
 
-### 2D plot of possible answers ###
+	# set font
+	ctx.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+	ctx.set_font_size(14)
 
-# draw background rectangle for the plot
-ctx.rectangle( 400, 0, 200, 200 )
-ctx.set_source_rgb( 0, 0, 0.3 )
-ctx.fill()
+	# display question text
+	ctx.move_to( 10, 20 )
+	ctx.set_source_rgb( 0, 0, 0 )
+	wrapped_text( guesses[i][0], 10, 20, 380 )
 
-### table of guesses and evidence ###
-ctx.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
-ctx.set_source_rgb( 0, 0, 0 )
-ctx.move_to( 10, 200 )
-ctx.show_text( "Prediction")
-ctx.move_to( 210, 200 )
-ctx.show_text( "Evidence")
+	### 2D plot of possible answers ###
 
-ctx.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL )
-ctx.move_to( 10, 220 )
-ctx.show_text( guesses[0][1] )
+	# draw background rectangle for the plot
+	ctx.rectangle( 400, 0, 200, 200 )
+	ctx.set_source_rgb( 0, 0, 0.3 )
+	ctx.fill()
 
+	### table of guesses and evidence ###
+	ctx.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
+	ctx.set_source_rgb( 0, 0, 0 )
+	ctx.move_to( 10, 250 )
+	ctx.show_text( "Prediction")
+	ctx.move_to( 210, 250 )
+	ctx.show_text( "Evidence")
 
-# output to PNG
-surface.write_to_png( "vis.png" )
+	ctx.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL )
+	ctx.move_to( 10, 270 )
+
+	ctx.show_text( guesses[i][1] )
+
+	# output to PNG
+	surface.write_to_png( "pictures/vis" + str(i) + ".png" )
