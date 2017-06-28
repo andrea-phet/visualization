@@ -1,6 +1,7 @@
 import cairocffi as cairo
 import math
 import pickle
+import numpy
 
 # my methods - idea: make an object that contains ctx as field and has these:
 
@@ -38,6 +39,10 @@ def wrapped_text( text, x, y, width ):
 #data
 with open( 'files/qantatest.p', 'rb' ) as infile:
 	guesses = pickle.load( infile )
+
+with open( 'projected_atest.npy', 'rb' ) as atest_file, open( 'projected_desctest.npy', 'rb') as desctest_file:
+	atest_2d = numpy.load( atest_file )
+	desctest_2d = numpy.load( desctest_file )
 
 WIDTH, HEIGHT = 600, 300
 for i in range( 0, 30 ):
@@ -77,6 +82,18 @@ for i in range( 0, 30 ):
 	ctx.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL )
 	ctx.move_to( 10, 270 )
 
+	ctx.show_text( guesses[i][1] )
+
+	point = desctest_2d[ guesses[i][3] ]
+	# map x,y range from (-1,-1),(1,1) to (400,200),(600,0)
+	center_x = point[ 0 ] * 20 + 500
+	center_y = point[ 1 ] * 20 + 100
+	
+    # gather information about the text to center it
+	(x, y, width, height, dx, dy) = ctx.text_extents( guesses[i][1] ) 
+	ctx.move_to( center_x - width/2, center_y + height/2 )
+	
+	ctx.set_source_rgb( 1, 1, 0 )
 	ctx.show_text( guesses[i][1] )
 
 	# output to PNG
