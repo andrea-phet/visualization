@@ -5,6 +5,10 @@ import numpy
 from sklearn.decomposition import PCA
 import imageio
 
+FRAMES_PER_SECOND = 1
+WIDTH, HEIGHT = 600, 300
+ITERATIONS = 30
+
 # methods for wrapping text
 
 def strip_last_word( string ):
@@ -110,8 +114,6 @@ def load_numpy(path):
 
 # create visualizations from data and returns paths of the pictures
 def visualize( guesses, desctest_2d ):
-	WIDTH, HEIGHT = 600, 300
-	ITERATIONS = 30
 	file_names = []
 	for i in range( 0, ITERATIONS ):
 		surface = cairo.ImageSurface( cairo.FORMAT_ARGB32, WIDTH, HEIGHT )
@@ -123,7 +125,6 @@ def visualize( guesses, desctest_2d ):
 	return file_names
 
 def create_gif( path_to_gif, file_names ):
-	FRAMES_PER_SECOND = 1
 	images = []
 	for file_name in file_names:
 		images.append(imageio.imread(file_name))
