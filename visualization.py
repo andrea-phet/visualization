@@ -2,15 +2,16 @@ import cairocffi as cairo
 import math
 import pickle
 import numpy
+from sklearn.decomposition import PCA
 
-# my methods - idea: make an object that contains ctx as field and has these:
+# methods for wrapping text
 
 def strip_last_word( string ):
 	words = string.split( ' ' )
 	words.pop()
 	return ' '.join( words )
 
-def make_less( raw_text, currently_text, done, width ):
+def make_less( ctx, raw_text, currently_text, done, width ):
 	if not raw_text:
 		return done
 	else:
@@ -19,82 +20,108 @@ def make_less( raw_text, currently_text, done, width ):
 			remaining_text = raw_text.replace( currently_text, '' )
 			remaining_text = remaining_text.lstrip()
 			done.append( currently_text )
-			return make_less( remaining_text, remaining_text, done, width )
+			return make_less( ctx, remaining_text, remaining_text, done, width )
 		else:
-			return make_less( raw_text, strip_last_word( currently_text ), done, width )
+			return make_less( ctx, raw_text, strip_last_word( currently_text ), done, width )
 
-def wrapped_text( text, x, y, width ):
+def wrapped_text( ctx, text, x, y, width ):
 	(text_x, text_y, text_width, text_height, dx, dy) = ctx.text_extents( text  )
 	if text_width <= width:
 		ctx.move_to( x, y )
 		ctx.show_text( text )
 	else:
 		ctx.move_to( x, y )
-		lines = make_less( text, text, [], width )
+		lines = make_less( ctx, text, text, [], width )
 		for line in lines:
 			ctx.show_text( line )
 			y += 20 #text_height + 2
 			ctx.move_to( x, y )
 
-#data
-with open( 'files/qantatest.p', 'rb' ) as infile:
-	guesses = pickle.load( infile )
+# plot a guess
+def plot( ctx, center_x, center_y, scale, text, point_x, point_y ):
+    
+	# map x,y range from (-1,-1),(1,1) to (400,200),(600,0)
+	mapped_x = point_x * scale + center_x
+	mapped_y = point_y * scale + center_y
+	
+    # gather information about the text to center it
+	(x, y, width, height, dx, dy) = ctx.text_extents( text ) 
+	ctx.move_to( mapped_x - width/2, mapped_y + height/2 )
+	
+	ctx.set_source_rgb( 1, 1, 0 )
+	ctx.show_text( text )
 
-with open( 'projected_atest.npy', 'rb' ) as atest_file, open( 'projected_desctest.npy', 'rb') as desctest_file:
-	atest_2d = numpy.load( atest_file )
-	desctest_2d = numpy.load( desctest_file )
+# create table from two dimensional array
+def create_table( ctx, left, top, array ):
+	x = left
+	y = top
+	ctx.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
+	ctx.set_source_rgb( 0, 0, 0 )
+	for row in array:
+		for cell in row:
+				ctx.move_to( x, y )
+				ctx.show_text( cell )
+				x = x + 200
+		x = left
+		y = y + 20
+		ctx.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL )
 
-WIDTH, HEIGHT = 600, 300
-for i in range( 0, 30 ):
-
-	surface = cairo.ImageSurface( cairo.FORMAT_ARGB32, WIDTH, HEIGHT )
-	ctx = cairo.Context (surface)
-
+#pycairo	
+def draw(ctx, width, height, i, guesses, desctest_2d ):
 	# draw a background rectangle
-	ctx.rectangle( 0, 0, WIDTH, HEIGHT )
+	ctx.rectangle( 0, 0, width, height )
 	ctx.set_source_rgb( 1, 1, 1 )
 	ctx.fill()
 
-	# set font
-	ctx.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
-	ctx.set_font_size(14)
-
 	# display question text
+	ctx.set_font_size(14)
+	ctx.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
 	ctx.move_to( 10, 20 )
 	ctx.set_source_rgb( 0, 0, 0 )
-	wrapped_text( guesses[i][0], 10, 20, 380 )
+	wrapped_text( ctx, guesses[i][0], 10, 20, 380 )
 
-	### 2D plot of possible answers ###
+	create_table( ctx, 10, 250, [ [ "Prediction", "Evidence" ], [ guesses[i][1], "-"] ] )
 
 	# draw background rectangle for the plot
 	ctx.rectangle( 400, 0, 200, 200 )
 	ctx.set_source_rgb( 0, 0, 0.3 )
 	ctx.fill()
-
-	### table of guesses and evidence ###
-	ctx.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
-	ctx.set_source_rgb( 0, 0, 0 )
-	ctx.move_to( 10, 250 )
-	ctx.show_text( "Prediction")
-	ctx.move_to( 210, 250 )
-	ctx.show_text( "Evidence")
-
-	ctx.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL )
-	ctx.move_to( 10, 270 )
-
-	ctx.show_text( guesses[i][1] )
-
-	point = desctest_2d[ guesses[i][3] ]
-	# map x,y range from (-1,-1),(1,1) to (400,200),(600,0)
-	center_x = point[ 0 ] * 20 + 500
-	center_y = point[ 1 ] * 20 + 100
 	
-    # gather information about the text to center it
-	(x, y, width, height, dx, dy) = ctx.text_extents( guesses[i][1] ) 
-	ctx.move_to( center_x - width/2, center_y + height/2 )
-	
-	ctx.set_source_rgb( 1, 1, 0 )
-	ctx.show_text( guesses[i][1] )
+	point = desctest_2d[i]
+	plot( ctx, 500, 100, 20, guesses[i][1], point[ 0 ], point [ 1 ] )
 
-	# output to PNG
-	surface.write_to_png( "pictures/vis" + str(i) + ".png" )
+# dimensions
+def reduce_to_2d(nd_array):
+	pca = PCA(n_components=2)
+	pca.fit(nd_array)
+	return pca.transform(nd_array)
+
+# loading data
+def load_pickle(path):
+	with open( path, 'rb' ) as infile:
+		loaded_pickle = pickle.load( infile )
+	return loaded_pickle
+
+def load_numpy(path):
+	with open( path, 'rb' ) as infile:
+		loaded_numpy = numpy.load( infile )
+	return loaded_numpy
+
+# create visualizations from data
+def visualize( guesses, desctest_2d ):
+	WIDTH, HEIGHT = 600, 300
+	ITERATIONS = 30
+	for i in range( 0, ITERATIONS ):
+		surface = cairo.ImageSurface( cairo.FORMAT_ARGB32, WIDTH, HEIGHT )
+		ctx = cairo.Context(surface)
+		draw( ctx, WIDTH, HEIGHT, i, guesses, desctest_2d )
+		surface.write_to_png( "pictures/vis" + str(i) + ".png" )
+
+# executed
+def main():
+	guesses = load_pickle('files/qantatest.p')
+	desctest_2d = reduce_to_2d( load_numpy('files/rnndesctest.npy') )
+	visualize( guesses, desctest_2d )
+	print( 'Visualization complete.')
+
+main()
