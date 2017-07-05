@@ -3,6 +3,7 @@ import math
 import pickle
 import numpy
 from sklearn.decomposition import PCA
+import imageio
 
 # methods for wrapping text
 
@@ -107,21 +108,33 @@ def load_numpy(path):
 		loaded_numpy = numpy.load( infile )
 	return loaded_numpy
 
-# create visualizations from data
+# create visualizations from data and returns paths of the pictures
 def visualize( guesses, desctest_2d ):
 	WIDTH, HEIGHT = 600, 300
 	ITERATIONS = 30
+	file_names = []
 	for i in range( 0, ITERATIONS ):
 		surface = cairo.ImageSurface( cairo.FORMAT_ARGB32, WIDTH, HEIGHT )
 		ctx = cairo.Context(surface)
 		draw( ctx, WIDTH, HEIGHT, i, guesses, desctest_2d )
-		surface.write_to_png( "pictures/vis" + str(i) + ".png" )
+		file_name = "pictures/vis" + str(i) + ".png"
+		surface.write_to_png( file_name )
+		file_names.append( file_name )
+	return file_names
 
+def create_gif( path_to_gif, file_names ):
+	FRAMES_PER_SECOND = 1
+	images = []
+	for file_name in file_names:
+		images.append(imageio.imread(file_name))
+	imageio.mimsave( path_to_gif, images, fps=FRAMES_PER_SECOND)
+	
 # executed
 def main():
 	guesses = load_pickle('files/qantatest.p')
 	desctest_2d = reduce_to_2d( load_numpy('files/rnndesctest.npy') )
-	visualize( guesses, desctest_2d )
+	file_names = visualize( guesses, desctest_2d )
+	create_gif( 'vis.gif', file_names )
 	print( 'Visualization complete.')
 
 main()
