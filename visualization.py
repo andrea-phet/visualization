@@ -7,7 +7,7 @@ import imageio
 import textwrap
 
 FRAMES_PER_SECOND = 1
-WIDTH, HEIGHT = 600, 300
+WIDTH, HEIGHT = 900, 500
 ITERATIONS = 30
 
 # draw wrapped text
@@ -67,17 +67,17 @@ def draw(ctx, width, height, i, guesses, desctest_2d ):
 	ctx.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
 	ctx.move_to( 10, 20 )
 	ctx.set_source_rgb( 0, 0, 0 )
-	wrapped_text( ctx, guesses[i][0], 20, 20, 360 )
+	wrapped_text( ctx, guesses[i][0], 20, 20, 440 )
 
 	create_table( ctx, 10, 250, [ [ "Prediction", "Evidence" ], [ guesses[i][1], "-"] ] )
 
 	# draw background rectangle for the plot
-	ctx.rectangle( 400, 0, 200, 200 )
+	ctx.rectangle( 500, 0, 400, 400 )
 	ctx.set_source_rgb( 0, 0, 0.3 )
 	ctx.fill()
 	
 	point = desctest_2d[i]
-	plot( ctx, 500, 100, 20, guesses[i][1], point[ 0 ], point [ 1 ] )
+	plot( ctx, 700, 200, 40, guesses[i][1], point[ 0 ], point [ 1 ] )
 
 # dimensions
 def reduce_to_2d(nd_array):
