@@ -56,7 +56,7 @@ def create_table( ctx, left, top, array ):
 		ctx.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL )
 
 #pycairo	
-def draw(ctx, width, height, i, guesses, desctest_2d ):
+def draw_visualization(ctx, width, height, i, guesses, desctest_2d ):
 	# draw a background rectangle
 	ctx.rectangle( 0, 0, width, height )
 	ctx.set_source_rgb( 1, 1, 1 )
@@ -102,12 +102,13 @@ def visualize( guesses, desctest_2d ):
 	for i in range( 0, ITERATIONS ):
 		surface = cairo.ImageSurface( cairo.FORMAT_ARGB32, WIDTH, HEIGHT )
 		ctx = cairo.Context(surface)
-		draw( ctx, WIDTH, HEIGHT, i, guesses, desctest_2d )
+		draw_visualization( ctx, WIDTH, HEIGHT, i, guesses, desctest_2d )
 		file_name = "pictures/vis" + str(i) + ".png"
 		surface.write_to_png( file_name )
 		file_names.append( file_name )
 	return file_names
 
+# animate pictures
 def create_gif( path_to_gif, file_names ):
 	images = []
 	for file_name in file_names:
