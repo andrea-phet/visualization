@@ -4,31 +4,13 @@ import pickle
 import numpy
 from sklearn.decomposition import PCA
 import imageio
+import textwrap
 
 FRAMES_PER_SECOND = 1
 WIDTH, HEIGHT = 600, 300
 ITERATIONS = 30
 
-# methods for wrapping text
-
-def strip_last_word( string ):
-	words = string.split( ' ' )
-	words.pop()
-	return ' '.join( words )
-
-def make_less( ctx, raw_text, currently_text, done, width ):
-	if not raw_text:
-		return done
-	else:
-		(text_x, text_y, text_width, text_height, dx, dy) = ctx.text_extents( currently_text  )
-		if text_width <= width:
-			remaining_text = raw_text.replace( currently_text, '' )
-			remaining_text = remaining_text.lstrip()
-			done.append( currently_text )
-			return make_less( ctx, remaining_text, remaining_text, done, width )
-		else:
-			return make_less( ctx, raw_text, strip_last_word( currently_text ), done, width )
-
+# draw wrapped text
 def wrapped_text( ctx, text, x, y, width ):
 	(text_x, text_y, text_width, text_height, dx, dy) = ctx.text_extents( text  )
 	if text_width <= width:
@@ -36,7 +18,9 @@ def wrapped_text( ctx, text, x, y, width ):
 		ctx.show_text( text )
 	else:
 		ctx.move_to( x, y )
-		lines = make_less( ctx, text, text, [], width )
+		character_width = text_width / len(text)
+		number_of_characters = width // character_width
+		lines = textwrap.wrap( text, width=number_of_characters )
 		for line in lines:
 			ctx.show_text( line )
 			y += 20 #text_height + 2
@@ -83,7 +67,7 @@ def draw(ctx, width, height, i, guesses, desctest_2d ):
 	ctx.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
 	ctx.move_to( 10, 20 )
 	ctx.set_source_rgb( 0, 0, 0 )
-	wrapped_text( ctx, guesses[i][0], 10, 20, 380 )
+	wrapped_text( ctx, guesses[i][0], 20, 20, 360 )
 
 	create_table( ctx, 10, 250, [ [ "Prediction", "Evidence" ], [ guesses[i][1], "-"] ] )
 
