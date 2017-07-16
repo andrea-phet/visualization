@@ -5,6 +5,8 @@ import numpy
 from sklearn.decomposition import PCA
 import imageio
 import textwrap
+import pandas
+from gensim import models
 
 FRAMES_PER_SECOND = 1
 WIDTH, HEIGHT = 900, 500
@@ -27,11 +29,14 @@ def wrapped_text( ctx, text, x, y, width ):
 			ctx.move_to( x, y )
 
 # plot a guess
-def plot( ctx, center_x, center_y, scale, text, point_x, point_y ):
-    
+def plot( ctx, center_x, center_y, scale, text, point_x, point_y, y_to_x_scale=1 ):
+	
+	scale_x = scale
+	scale_y = scale * y_to_x_scale
+
 	# map x,y range from (-1,-1),(1,1) to (400,200),(600,0)
-	mapped_x = point_x * scale + center_x
-	mapped_y = point_y * scale + center_y
+	mapped_x = point_x * scale_x + center_x
+	mapped_y = point_y * scale_y + center_y
 	
     # gather information about the text to center it
 	(x, y, width, height, dx, dy) = ctx.text_extents( text ) 
@@ -96,17 +101,10 @@ def load_numpy(path):
 		loaded_numpy = numpy.load( infile )
 	return loaded_numpy
 
-# create visualizations from data and returns paths of the pictures
-def visualize( guesses, desctest_2d ):
-	file_names = []
-	for i in range( 0, ITERATIONS ):
-		surface = cairo.ImageSurface( cairo.FORMAT_ARGB32, WIDTH, HEIGHT )
-		ctx = cairo.Context(surface)
-		draw_visualization( ctx, WIDTH, HEIGHT, i, guesses, desctest_2d )
-		file_name = "pictures/vis" + str(i) + ".png"
-		surface.write_to_png( file_name )
-		file_names.append( file_name )
-	return file_names
+def load_pandas(path):
+	with open( path, 'rb' ) as infile:
+		loaded_pandas = pandas.read_pickle(infile)
+	return loaded_pandas
 
 # animate pictures
 def create_gif( path_to_gif, file_names ):
@@ -115,12 +113,122 @@ def create_gif( path_to_gif, file_names ):
 		images.append(imageio.imread(file_name))
 	imageio.mimsave( path_to_gif, images, fps=FRAMES_PER_SECOND)
 	
-# executed
-def main():
+# create visualizations from data and returns paths of the pictures
+def visualize():
 	guesses = load_pickle('files/qantatest.p')
 	desctest_2d = reduce_to_2d( load_numpy('files/rnndesctest.npy') )
-	file_names = visualize( guesses, desctest_2d )
+	file_names = []
+	for i in range( 0, ITERATIONS ):
+		surface = cairo.ImageSurface( cairo.FORMAT_ARGB32, WIDTH, HEIGHT )
+		ctx = cairo.Context(surface)
+		draw_visualization( ctx, WIDTH, HEIGHT, i, guesses, desctest_2d )
+		file_name = "pictures/vis" + str(i) + ".png"
+		surface.write_to_png( file_name )
+		file_names.append( file_name )
 	create_gif( 'vis.gif', file_names )
 	print( 'Visualization complete.')
+
+# get training data
+def create_sentences(path_to_file):
+	sentences = []
+	with open( path_to_file ) as infile:
+		for line in infile.readlines():
+			line = line.strip( '\n' )
+			line = line.strip(',.!?"-')
+			words = line.split()
+			sentences.append( words )
+	return sentences
+
+
+# experiment with word2vec
+def word_vectors():
+	'''
+	computer
+	programmer
+	Shadowhunters
+	Jace Wayland
+	Clary Fray
+	nerd
+	Pho
+	Jianghu
+	'''
+
+	# sentences = [
+	# 	['computer', 'programmer'],
+	# 	['Jace','Wayland','and','Clary','Fray','are','Shadowhunters'],
+	# 	['I','am','a','nerd','and','I','like','Pho'],
+	# 	['Jianghu','is','the','wuxia','world','of','citizens','heroes','and','evildoers']
+	# ]
+	text_file = 'City of Bones.txt'
+	sentences = create_sentences(text_file)
+	print('Processed text file ' + text_file + ' into sentences and words')
+	model = models.Word2Vec( sentences, min_count=1 )
+	disk_file_name = 'wordsbyandrea.txt'
+	model.save(disk_file_name)
+	model = models.Word2Vec.load(disk_file_name)
+	print( 'Trained and loaded word2vec model into ' + disk_file_name )
+	words = [
+		# 'Shadowhunter',
+		# 'Shadowhunters',
+		# 'warlock',
+		# 'warlocks',
+		# 'vampire',
+		# 'vampires',
+		# 'werewolf',
+		# 'werewolves',
+		# 'faerie',
+		# 'faeries',
+		# 'Jace',
+		# 'Clary',
+		# 'Isabelle',
+		# 'Simon',
+		# 'Alec',
+		# 'Magnus',
+		# 'Valentine',
+		# 'Jocelyn',
+		# 'Luke',
+		'angel',
+		'demon',
+		'stele',
+		'rune',
+		'hair',
+		'hands'
+	]
+	vectors = []
+	for word in words:
+		word_vector = model.wv[word]
+		vectors.append( word_vector )
+	word_vectors = numpy.array( vectors )
+	word_2d_vectors = reduce_to_2d( word_vectors )
+
+	surface = cairo.ImageSurface( cairo.FORMAT_ARGB32, WIDTH, HEIGHT )
+	ctx = cairo.Context(surface)
+
+	# draw a background rectangle
+	ctx.rectangle( 0, 0, WIDTH, HEIGHT )
+	ctx.set_source_rgb( 1, 1, 1 )
+	ctx.fill()
+
+	# draw background rectangle for the plot
+	ctx.rectangle( 400, 0, 500, 500 )
+	ctx.set_source_rgb( 0, 0, 0.3 )
+	ctx.fill()
+
+	table = [ [ "Word", "2D Vector" ] ]
+	
+	for i in range( 0, len(words) ):
+		point = word_2d_vectors[i]
+		plot( ctx, 650, 250, 40, words[i], point[ 0 ], point [ 1 ], y_to_x_scale=25 )
+		table.append( [ words[i], str(point[0])+', '+str(point[1]) ] )
+	
+	create_table( ctx, 10, 20, table )
+
+	file_name = "word2vec.png"
+	surface.write_to_png( file_name )
+		
+# executed
+def main():
+	# visualize()
+	word_vectors()
 
 main()
