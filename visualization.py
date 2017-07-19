@@ -101,6 +101,10 @@ def load_numpy(path):
 		loaded_numpy = numpy.load( infile )
 	return loaded_numpy
 
+def save_numpy( path, output ):
+	with open( path, 'wb' ) as outfile:
+		numpy.save( outfile, output )
+
 def load_pandas(path):
 	with open( path, 'rb' ) as infile:
 		loaded_pandas = pandas.read_pickle(infile)
@@ -159,14 +163,17 @@ def word_vectors():
 	# 	['I','am','a','nerd','and','I','like','Pho'],
 	# 	['Jianghu','is','the','wuxia','world','of','citizens','heroes','and','evildoers']
 	# ]
-	text_file = 'City of Bones.txt'
-	sentences = create_sentences(text_file)
-	print('Processed text file ' + text_file + ' into sentences and words')
-	model = models.Word2Vec( sentences, min_count=1 )
-	disk_file_name = 'wordsbyandrea.txt'
-	model.save(disk_file_name)
-	model = models.Word2Vec.load(disk_file_name)
-	print( 'Trained and loaded word2vec model into ' + disk_file_name )
+	# text_file = 'City of Bones.txt'
+	# sentences = create_sentences(text_file)
+	# print('Processed text file ' + text_file + ' into sentences and words')
+	# model = models.Word2Vec( sentences, min_count=1 )
+	# disk_file_name = 'wordsbyandrea.txt'
+	# model.save(disk_file_name)
+	# model = models.Word2Vec.load(disk_file_name)
+	# print( 'Trained and loaded word2vec model into ' + disk_file_name )
+	# print( 'Start loading google model' )
+	# model = models.KeyedVectors.load_word2vec_format('../GoogleNews-vectors-negative300.bin', binary=True)  
+	# print( 'Loaded google model' )
 	words = [
 		# 'Shadowhunter',
 		# 'Shadowhunters',
@@ -194,11 +201,16 @@ def word_vectors():
 		'hair',
 		'hands'
 	]
-	vectors = []
-	for word in words:
-		word_vector = model.wv[word]
-		vectors.append( word_vector )
-	word_vectors = numpy.array( vectors )
+	# vectors = []
+	# for word in words:
+	# 	word_vector = model.wv[word]
+	# 	vectors.append( word_vector )
+	# word_vectors = numpy.array( vectors )
+	vectors_file_name = 'angle_demon_vectors.npy'
+	# print( 'saving array into file ' + vectors_file_name )
+	# save_numpy( vectors_file_name, word_vectors )
+	# print( 'saved' )
+	word_vectors = load_numpy( vectors_file_name )
 	word_2d_vectors = reduce_to_2d( word_vectors )
 
 	surface = cairo.ImageSurface( cairo.FORMAT_ARGB32, WIDTH, HEIGHT )
@@ -218,7 +230,7 @@ def word_vectors():
 	
 	for i in range( 0, len(words) ):
 		point = word_2d_vectors[i]
-		plot( ctx, 650, 250, 40, words[i], point[ 0 ], point [ 1 ], y_to_x_scale=25 )
+		plot( ctx, 650, 250, 40, words[i], point[ 0 ], point [ 1 ], y_to_x_scale=1 )
 		table.append( [ words[i], str(point[0])+', '+str(point[1]) ] )
 	
 	create_table( ctx, 10, 20, table )
