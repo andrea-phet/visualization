@@ -6,3 +6,13 @@ file id,first question id,first word,nth guess,probability,evidence,evidence,med
 file id,first question id,second word,first guess,probability,evidence,evidence,medium dimensional array
 ...
 file id,first question id,last word,nth guess,probability,evidence,evidence,medium dimensional array
+
+guesses
+0 - i
+	0 = question
+	1 = guess
+
+
+1
+
+2

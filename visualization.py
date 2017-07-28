@@ -10,7 +10,7 @@ from gensim import models
 
 FRAMES_PER_SECOND = 1
 WIDTH, HEIGHT = 900, 500
-ITERATIONS = 30
+ITERATIONS = 2
 
 # draw wrapped text
 def wrapped_text( ctx, text, x, y, width ):
@@ -38,7 +38,7 @@ def plot( ctx, center_x, center_y, scale, text, point_x, point_y, y_to_x_scale=1
 	mapped_x = point_x * scale_x + center_x
 	mapped_y = point_y * scale_y + center_y
 	
-    # gather information about the text to center it
+	# gather information about the text to center it
 	(x, y, width, height, dx, dy) = ctx.text_extents( text ) 
 	ctx.move_to( mapped_x - width/2, mapped_y + height/2 )
 	
@@ -61,7 +61,7 @@ def create_table( ctx, left, top, array ):
 		ctx.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL )
 
 #pycairo	
-def draw_visualization(ctx, width, height, i, guesses, desctest_2d ):
+def draw_visualization(ctx, width, height, i, frame ):
 	# draw a background rectangle
 	ctx.rectangle( 0, 0, width, height )
 	ctx.set_source_rgb( 1, 1, 1 )
@@ -72,17 +72,24 @@ def draw_visualization(ctx, width, height, i, guesses, desctest_2d ):
 	ctx.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
 	ctx.move_to( 10, 20 )
 	ctx.set_source_rgb( 0, 0, 0 )
-	wrapped_text( ctx, guesses[i][0], 20, 20, 440 )
+	print(frame)
+	wrapped_text( ctx, frame[0], 20, 20, 440 )
 
-	create_table( ctx, 10, 250, [ [ "Prediction", "Evidence" ], [ guesses[i][1], "-"] ] )
+	table = [ [ "Prediction", "Evidence" ] ]
+	for i in range(1, len(frame)):
+		table.append([ frame[i][0], str(frame[i][1]) ] )
+
+	print(table)
+
+	create_table( ctx, 10, 250, table )
 
 	# draw background rectangle for the plot
 	ctx.rectangle( 500, 0, 400, 400 )
 	ctx.set_source_rgb( 0, 0, 0.3 )
 	ctx.fill()
 	
-	point = desctest_2d[i]
-	plot( ctx, 700, 200, 40, guesses[i][1], point[ 0 ], point [ 1 ] )
+	# point = desctest_2d[i]
+	# plot( ctx, 700, 200, 40, guesses[i][1], point[ 0 ], point [ 1 ] )
 
 # dimensions
 def reduce_to_2d(nd_array):
@@ -119,13 +126,43 @@ def create_gif( path_to_gif, file_names ):
 	
 # create visualizations from data and returns paths of the pictures
 def visualize():
-	guesses = load_pickle('files/qantatest.p')
-	desctest_2d = reduce_to_2d( load_numpy('files/rnndesctest.npy') )
+	# guesses = load_pickle('files/qantatest.p')
+	print('Loading guesses_expo.')
+	guesses_data = load_pandas('../guesser_guesses/guesses_dev.pickle')
+	print('Done loading guesses_dev.')
+	# return guesses_data
+	# return guesses_data.groupby( 'qnum' )
+	# values = guesses_data.groupby( 'qnum' ).sum().groupby(['sentence','token']).sum().values
+	values = guesses_data.values
+	# groupped_guesses_data = guesses_data.groupby('qnum').mean().groupby( ['sentence', 'token' ] ).mean()
+	# print(groupped_guesses_data)
+	# return
+	questions_lookup = load_pickle('questions_lookup.pkl')
+	# desctest_2d = reduce_to_2d( load_numpy('files/rnndesctest.npy') )
 	file_names = []
+	frames = []
+	last_token = None
+	frame = None
+	for i in range (0, 30):
+		value = values[i]
+		answer = value[1]
+		qnum = value[3]
+		score = value[4]
+		sentence = value[5]
+		token = value[6]
+		if token == last_token:
+			frame.append( [ answer, score ] )
+		else:
+			frames.append( frame )
+			question_text = questions_lookup[qnum]
+			question_text_so_far = question_text[sentence][:token]
+			frame = [question_text_so_far]
+			last_token = token
+	frames.pop(0) # pop the first None frame from the list
 	for i in range( 0, ITERATIONS ):
 		surface = cairo.ImageSurface( cairo.FORMAT_ARGB32, WIDTH, HEIGHT )
 		ctx = cairo.Context(surface)
-		draw_visualization( ctx, WIDTH, HEIGHT, i, guesses, desctest_2d )
+		draw_visualization( ctx, WIDTH, HEIGHT, i, frames[i] )
 		file_name = "pictures/vis" + str(i) + ".png"
 		surface.write_to_png( file_name )
 		file_names.append( file_name )
@@ -240,7 +277,7 @@ def word_vectors():
 		
 # executed
 def main():
-	# visualize()
-	word_vectors()
+	print(visualize())
+	# word_vectors()
 
 main()
