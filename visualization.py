@@ -12,8 +12,9 @@ import re
 # For paths, the home is qb.
 
 FRAMES_PER_SECOND = 1
-WIDTH, HEIGHT = 900, 500
+WIDTH, HEIGHT = 1050, 600
 ITERATIONS = 2
+PLOT_SIDE_LENGTH = 600
 
 # draw wrapped text
 def wrapped_text( ctx, text, x, y, width ):
@@ -46,7 +47,6 @@ def unnormalize_wikipedia_title(title):
     :param title: raw wikipedia title
     :return: normalized title
     """
-    print('Un-normalizing wikipedia title.')
     return title.replace('_', ' ')
 
 # plot a guess
@@ -76,7 +76,7 @@ def create_table( ctx, left, top, array ):
 		for cell in row:
 				ctx.move_to( x, y )
 				ctx.show_text( cell )
-				x = x + 200
+				x = x + 310
 		x = left
 		y = y + 20
 		ctx.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL )
@@ -93,11 +93,10 @@ def draw_visualization(ctx, width, height, i, frame, have_vectors_data=False ):
 	ctx.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
 	ctx.move_to( 10, 20 )
 	ctx.set_source_rgb( 0, 0, 0 )
-	print(frame)
 	wrapped_text( ctx, frame[0], 20, 20, 440 )
 
 	# draw background rectangle for the plot
-	ctx.rectangle( 500, 0, 400, 400 )
+	ctx.rectangle( WIDTH - PLOT_SIDE_LENGTH, 0, PLOT_SIDE_LENGTH, PLOT_SIDE_LENGTH )
 	ctx.set_source_rgb( 0, 0, 0.3 )
 	ctx.fill()
 
@@ -106,7 +105,7 @@ def draw_visualization(ctx, width, height, i, frame, have_vectors_data=False ):
 		table.append([ frame[i][0], str(frame[i][1]) ] )
 		if ( have_vectors_data is not False ):
 			point = frame[i][2]
-			plot( ctx, 700, 200, 40, frame[i][0], point[ 0 ], point [ 1 ] )
+			plot( ctx, WIDTH - PLOT_SIDE_LENGTH / 2, PLOT_SIDE_LENGTH / 2, 400, frame[i][0], point[ 0 ], point [ 1 ], y_to_x_scale=1 )
 
 	create_table( ctx, 10, 250, table )
 
@@ -159,15 +158,8 @@ def visualize( guesses_data=None, cached_wikipedia=None, w2vmodel=None ):
 		print('Loading guesses_expo.')
 		guesses_data = load_guesses()
 		print('Done loading guesses_dev.')
-	# return guesses_data
-	# return guesses_data.groupby( 'qnum' )
-	# values = guesses_data.groupby( 'qnum' ).sum().groupby(['sentence','token']).sum().values
 	values = guesses_data.values
-	# groupped_guesses_data = guesses_data.groupby('qnum').mean().groupby( ['sentence', 'token' ] ).mean()
-	# print(groupped_guesses_data)
-	# return
 	questions_lookup = load_pickle('../visualization/questions_lookup.pkl')
-	# desctest_2d = reduce_to_2d( load_numpy('files/rnndesctest.npy') )
 	file_names = []
 	frames = []
 	last_token = None
@@ -195,29 +187,21 @@ def visualize( guesses_data=None, cached_wikipedia=None, w2vmodel=None ):
 
 			# find word2vectors for each guess, and fit PCA model on them
 			vectors=[]
-			# print(frame)
 			for i in range(1, len(frame)):
-				# print(frame[i][0])
 				answer = unnormalize_wikipedia_title(frame[i][0])
 				wiki_page = cached_wikipedia[answer]
 				wikipedia_words = getWords( wiki_page.content )
 				wikipedia_word_vectors = []
 				for word in wikipedia_words:
-					# print(word)
 					try:
 						wikipedia_word_vector = w2vmodel.wv[word]
 					except:
 						not_in_vocab.append(word)
-					# print(wikipedia_word_vector)
 					wikipedia_word_vectors.append( wikipedia_word_vector )
-				# print(wikipedia_word_vectors)
 				vector = numpy.array(wikipedia_word_vectors).mean(axis=0)
-				# print(i)
 				vectors.append(vector)
 			# TODO, get question average vector and origin around that
-			# print(type(vectors), len(vectors), vectors[0])
 			vectors2d = reduce_to_2d(numpy.array(vectors))
-			print(vectors2d) #[[ 0.]]
 
 			# add 2d vector to each guess info array
 			for i in range(0, len(vectors2d)):
