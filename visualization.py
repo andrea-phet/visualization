@@ -7,6 +7,9 @@ import imageio
 import textwrap
 import pandas
 from gensim import models
+import re
+
+# For paths, the home is qb.
 
 FRAMES_PER_SECOND = 1
 WIDTH, HEIGHT = 900, 500
@@ -27,6 +30,24 @@ def wrapped_text( ctx, text, x, y, width ):
 			ctx.show_text( line )
 			y += 20 #text_height + 2
 			ctx.move_to( x, y )
+
+# strings
+def get_number_of_words( sentence, number_of_words ):
+	words = sentence.split(' ')
+	return ' '.join(words[:number_of_words])
+
+def getWords(text):
+	return re.compile('\w+').findall(text)
+
+def unnormalize_wikipedia_title(title):
+    """
+    Normalize wikipedia title coming from raw dumps. This removes non-ascii characters by converting them to their
+    nearest equivalent and replaces spaces with underscores
+    :param title: raw wikipedia title
+    :return: normalized title
+    """
+    print('Un-normalizing wikipedia title.')
+    return title.replace('_', ' ')
 
 # plot a guess
 def plot( ctx, center_x, center_y, scale, text, point_x, point_y, y_to_x_scale=1 ):
@@ -61,7 +82,7 @@ def create_table( ctx, left, top, array ):
 		ctx.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL )
 
 #pycairo	
-def draw_visualization(ctx, width, height, i, frame ):
+def draw_visualization(ctx, width, height, i, frame, have_vectors_data=False ):
 	# draw a background rectangle
 	ctx.rectangle( 0, 0, width, height )
 	ctx.set_source_rgb( 1, 1, 1 )
@@ -75,21 +96,19 @@ def draw_visualization(ctx, width, height, i, frame ):
 	print(frame)
 	wrapped_text( ctx, frame[0], 20, 20, 440 )
 
-	table = [ [ "Prediction", "Evidence" ] ]
-	for i in range(1, len(frame)):
-		table.append([ frame[i][0], str(frame[i][1]) ] )
-
-	print(table)
-
-	create_table( ctx, 10, 250, table )
-
 	# draw background rectangle for the plot
 	ctx.rectangle( 500, 0, 400, 400 )
 	ctx.set_source_rgb( 0, 0, 0.3 )
 	ctx.fill()
-	
-	# point = desctest_2d[i]
-	# plot( ctx, 700, 200, 40, guesses[i][1], point[ 0 ], point [ 1 ] )
+
+	table = [ [ "Prediction", "Evidence" ] ]
+	for i in range(1, len(frame)):
+		table.append([ frame[i][0], str(frame[i][1]) ] )
+		if ( have_vectors_data is not False ):
+			point = frame[i][2]
+			plot( ctx, 700, 200, 40, frame[i][0], point[ 0 ], point [ 1 ] )
+
+	create_table( ctx, 10, 250, table )
 
 # dimensions
 def reduce_to_2d(nd_array):
@@ -123,13 +142,23 @@ def create_gif( path_to_gif, file_names ):
 	for file_name in file_names:
 		images.append(imageio.imread(file_name))
 	imageio.mimsave( path_to_gif, images, fps=FRAMES_PER_SECOND)
-	
-# create visualizations from data and returns paths of the pictures
-def visualize():
-	# guesses = load_pickle('files/qantatest.p')
+
+# loading data, hopefully just once
+def load_guesses():
 	print('Loading guesses_expo.')
-	guesses_data = load_pandas('../guesser_guesses/guesses_dev.pickle')
+	return load_pandas('../guesser_guesses/guesses_dev.pickle')
 	print('Done loading guesses_dev.')
+
+# create visualizations from data and returns paths of the pictures
+def visualize( guesses_data=None, cached_wikipedia=None, w2vmodel=None ):
+	'''
+	cached_wikipedia=CachedWikipedia(), w2vmodel=models.KeyedVectors.load_word2vec_format(\'../GoogleNews-vectors-negative300.bin\', binary=True)
+	'''
+	# guesses = load_pickle('files/qantatest.p')
+	if ( guesses_data is None ):
+		print('Loading guesses_expo.')
+		guesses_data = load_guesses()
+		print('Done loading guesses_dev.')
 	# return guesses_data
 	# return guesses_data.groupby( 'qnum' )
 	# values = guesses_data.groupby( 'qnum' ).sum().groupby(['sentence','token']).sum().values
@@ -137,7 +166,7 @@ def visualize():
 	# groupped_guesses_data = guesses_data.groupby('qnum').mean().groupby( ['sentence', 'token' ] ).mean()
 	# print(groupped_guesses_data)
 	# return
-	questions_lookup = load_pickle('questions_lookup.pkl')
+	questions_lookup = load_pickle('../visualization/questions_lookup.pkl')
 	# desctest_2d = reduce_to_2d( load_numpy('files/rnndesctest.npy') )
 	file_names = []
 	frames = []
@@ -155,18 +184,55 @@ def visualize():
 		else:
 			frames.append( frame )
 			question_text = questions_lookup[qnum]
-			question_text_so_far = question_text[sentence][:token]
+			question_text_so_far = get_number_of_words( question_text[sentence], token )
 			frame = [question_text_so_far]
 			last_token = token
 	frames.pop(0) # pop the first None frame from the list
+	if ( cached_wikipedia is not None ):
+		use_wikipedia = True
+		not_in_vocab = []
+		for frame in frames:
+
+			# find word2vectors for each guess, and fit PCA model on them
+			vectors=[]
+			# print(frame)
+			for i in range(1, len(frame)):
+				# print(frame[i][0])
+				answer = unnormalize_wikipedia_title(frame[i][0])
+				wiki_page = cached_wikipedia[answer]
+				wikipedia_words = getWords( wiki_page.content )
+				wikipedia_word_vectors = []
+				for word in wikipedia_words:
+					# print(word)
+					try:
+						wikipedia_word_vector = w2vmodel.wv[word]
+					except:
+						not_in_vocab.append(word)
+					# print(wikipedia_word_vector)
+					wikipedia_word_vectors.append( wikipedia_word_vector )
+				# print(wikipedia_word_vectors)
+				vector = numpy.array(wikipedia_word_vectors).mean(axis=0)
+				# print(i)
+				vectors.append(vector)
+			# TODO, get question average vector and origin around that
+			# print(type(vectors), len(vectors), vectors[0])
+			vectors2d = reduce_to_2d(numpy.array(vectors))
+			print(vectors2d) #[[ 0.]]
+
+			# add 2d vector to each guess info array
+			for i in range(0, len(vectors2d)):
+				frame[i+1].append(vectors2d[i])
+		# print( 'Not in vocab: ' + str(not_in_vocab) )
+	else:
+		use_wikipedia = False
 	for i in range( 0, ITERATIONS ):
 		surface = cairo.ImageSurface( cairo.FORMAT_ARGB32, WIDTH, HEIGHT )
 		ctx = cairo.Context(surface)
-		draw_visualization( ctx, WIDTH, HEIGHT, i, frames[i] )
-		file_name = "pictures/vis" + str(i) + ".png"
+		draw_visualization( ctx, WIDTH, HEIGHT, i, frames[i], have_vectors_data=use_wikipedia )
+		file_name = "../visualization/pictures/vis" + str(i) + ".png"
 		surface.write_to_png( file_name )
 		file_names.append( file_name )
-	create_gif( 'vis.gif', file_names )
+	create_gif( '../visualization/vis.gif', file_names )
 	print( 'Visualization complete.')
 
 # get training data
@@ -280,4 +346,4 @@ def main():
 	print(visualize())
 	# word_vectors()
 
-main()
+# main()
