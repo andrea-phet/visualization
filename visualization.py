@@ -216,19 +216,18 @@ def visualize( guesses_data=None, cached_wikipedia=None, w2vmodel=None ):
 			# shift vectors to center around top guess
 			top_guess = numpy.copy( vectors[0] )
 
-			# add a strut to change the mean
+			# add a strut to force the mean to be the top guess
+			strut = []
+			for x in range( 0, len(top_guess) ):
+				sum_column = 0
+				for vector in vectors:
+					sum_column += vector[x]
+				strut.append( top_guess[x] * ( len(vectors) + 1 ) - sum_column )
 			# strut = numpy.subtract( numpy.multiply( top_guess, len(vectors ) ), numpy.sum( vectors[1:] ) )
-			# vectors.append( strut )
-			# print( vectors[0][0] )
+			vectors.append( strut )
 			vectors2d = reduce_to_2d(numpy.array(vectors))
-			# vectors2d = vectors2d[:-1].copy() # remove strut
-			# print( vectors2d )
-
-			top_guess = numpy.copy( vectors2d[0] )
-			# print( top_guess )
-			for k in range(0, len(vectors2d)):
-				vectors2d[k] = numpy.subtract( vectors2d[k], top_guess )
-			print( vectors2d[0] )
+			vectors2d = vectors2d[:-1].copy() # remove strut
+			print( vectors2d )
 
 			# add 2d vector to each guess info array
 			for k in range(0, len(vectors2d)):
