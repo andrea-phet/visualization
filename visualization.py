@@ -217,12 +217,12 @@ def visualize( guesses_data=None, cached_wikipedia=None, w2vmodel=None ):
 			top_guess = numpy.copy( vectors[0] )
 
 			# add a strut to change the mean
-			strut = numpy.subtract( numpy.multiply( top_guess, len(vectors ) ), numpy.sum( vectors[1:] ) )
-			vectors.append( strut )
-			print( vectors[0][0] )
+			# strut = numpy.subtract( numpy.multiply( top_guess, len(vectors ) ), numpy.sum( vectors[1:] ) )
+			# vectors.append( strut )
+			# print( vectors[0][0] )
 			vectors2d = reduce_to_2d(numpy.array(vectors))
-			vectors2d = vectors2d[:-1].copy() # remove strut
-			print( vectors2d )
+			# vectors2d = vectors2d[:-1].copy() # remove strut
+			# print( vectors2d )
 
 			top_guess = numpy.copy( vectors2d[0] )
 			# print( top_guess )
