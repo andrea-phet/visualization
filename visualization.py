@@ -187,14 +187,21 @@ def visualize( guesses_data=None, cached_wikipedia=None, w2vmodel=None, question
 			# print('frame')
 			frames.append( frame )
 			question_text = questions_lookup[qnum].text
-			print('Answer: ' + questions_lookup[qnum].answer)
 			question_text_so_far = ''
 			for m in range(0,sentence):
 				question_text_so_far += question_text[m] + ' '
-			question_text_so_far += get_number_of_words( question_text[sentence], token )
+			try:
+				question_text_so_far += get_number_of_words( question_text[sentence], token )
+			except:
+				print('sentence ' + str(sentence))
+				print('token ' + str(token))
+				print(question_text)
 			frame = [question_text_so_far]
 			last_token = token
 	frames.pop(0) # pop the first None frame from the list
+
+	# words with no wikipage
+	no_wiki_page = []
 
 	# get word vectors for each frame
 	if ( cached_wikipedia is not None ):
@@ -208,10 +215,16 @@ def visualize( guesses_data=None, cached_wikipedia=None, w2vmodel=None, question
 				answer = unnormalize_wikipedia_title(frame[j][0])
 
 				# fix some titles so wikipedia model can find the page
-				if ( answer == 'Orange'):
-					answer = 'Orange (color)'
-				if ( answer == 'Java (programming language)'):
-					answer = 'Java'
+				fixed_titles_dict = {
+					'Orange': 'Orange (color)',
+					'Java (programming language)': 'Java',
+					'List of Vanity Fair (British magazine) caricatures': 'Vanity Fair (UK magazine)',
+					'Populist Party': "People's Party (United States)",
+					'Eighth Amendment': 'Eighth Amendment to the United States Constitution'
+				}
+
+				if ( answer in fixed_titles_dict ):
+					answer = fixed_titles_dict[answer]
 				wiki_page = cached_wikipedia[answer]
 				wikipedia_words = getWords( wiki_page.content )
 				wikipedia_word_vectors = []
@@ -225,7 +238,7 @@ def visualize( guesses_data=None, cached_wikipedia=None, w2vmodel=None, question
 				if ( not numpy.isnan(vector).any()): # only add word_vector if it exists
 					vectors.append(vector)
 				else:
-					print('nan vector ' + answer)
+					no_wiki_page.append(answer)
 
 			vectors2d = reduce_to_2d(numpy.array(vectors))
 
@@ -240,6 +253,8 @@ def visualize( guesses_data=None, cached_wikipedia=None, w2vmodel=None, question
 		# print( 'Not in vocab: ' + str(not_in_vocab) )
 	else:
 		use_wikipedia = False
+
+	print(no_wiki_page)
 
 	# draw each frame
 	for i in range( 0, len(frames) ):
