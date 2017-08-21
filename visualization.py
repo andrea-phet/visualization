@@ -151,10 +151,9 @@ def create_gif( path_to_gif, file_names ):
 def load_guesses():
 	print('Loading guesses_expo.')
 	return load_pandas('../guesser_guesses/guesses_dev.pickle')
-	print('Done loading guesses_dev.')
 
 # create visualizations from data and returns paths of the pictures
-def visualize( guesses_data=None, cached_wikipedia=None, w2vmodel=None ):
+def visualize( guesses_data=None, cached_wikipedia=None, w2vmodel=None, questions_lookup=None ):
 	'''
 	cached_wikipedia=CachedWikipedia(), w2vmodel=models.KeyedVectors.load_word2vec_format(\'../GoogleNews-vectors-negative300.bin\', binary=True)
 	'''
@@ -164,7 +163,10 @@ def visualize( guesses_data=None, cached_wikipedia=None, w2vmodel=None ):
 		guesses_data = load_guesses()
 		print('Done loading guesses_dev.')
 	values = guesses_data.values
-	questions_lookup = load_pickle('../visualization/questions_lookup.pkl')
+	if ( questions_lookup is None ):
+		print('Loading old questions database.')
+		questions_lookup = load_pickle('../visualization/questions_lookup.pkl')
+		print('Done loading questions.')
 	file_names = []
 	frames = []
 	last_token = None
@@ -182,7 +184,7 @@ def visualize( guesses_data=None, cached_wikipedia=None, w2vmodel=None ):
 			frame.append( [ answer, score ] )
 		else:
 			frames.append( frame )
-			question_text = questions_lookup[qnum]
+			question_text = questions_lookup[qnum].text
 			question_text_so_far = ''
 			for m in range(0,sentence):
 				question_text_so_far += question_text[m]
