@@ -187,6 +187,7 @@ def visualize( guesses_data=None, cached_wikipedia=None, w2vmodel=None, question
 			# print('frame')
 			frames.append( frame )
 			question_text = questions_lookup[qnum].text
+			print('Answer: ' + questions_lookup[qnum].answer)
 			question_text_so_far = ''
 			for m in range(0,sentence):
 				question_text_so_far += question_text[m] + ' '
@@ -226,21 +227,12 @@ def visualize( guesses_data=None, cached_wikipedia=None, w2vmodel=None, question
 				else:
 					print('nan vector ' + answer)
 
-			# shift vectors to center around top guess
-			top_guess = numpy.copy( vectors[0] )
-
-			# add a strut to force the mean to be the top guess
-			strut = []
-			for x in range( 0, len(top_guess) ):
-				sum_column = 0
-				for vector in vectors:
-					sum_column += vector[x]
-				strut.append( top_guess[x] * ( len(vectors) + 1 ) - sum_column )
-			# strut = numpy.subtract( numpy.multiply( top_guess, len(vectors ) ), numpy.sum( vectors[1:] ) )
-			vectors.append( strut )
 			vectors2d = reduce_to_2d(numpy.array(vectors))
-			vectors2d = vectors2d[:-1].copy() # remove strut
-			# print( vectors2d )
+
+			# shift vectors to center around top guess
+			top_guess = numpy.copy( vectors2d[0] )
+			for k in range(0, len(vectors2d)):
+				vectors2d[k] = numpy.subtract( vectors2d[k], top_guess )
 
 			# add 2d vector to each guess info array
 			for k in range(0, len(vectors2d)):
