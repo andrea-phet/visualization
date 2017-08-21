@@ -153,7 +153,7 @@ def load_guesses():
 	return load_pandas('../guesser_guesses/guesses_dev.pickle')
 
 # create visualizations from data and returns paths of the pictures
-def visualize( guesses_data=None, cached_wikipedia=None, w2vmodel=None, questions_lookup=None ):
+def visualize( guesses_data=None, cached_wikipedia=None, w2vmodel=None, questions_lookup=None, rows=DATA_ROWS ):
 	'''
 	cached_wikipedia=CachedWikipedia(), w2vmodel=models.KeyedVectors.load_word2vec_format(\'../GoogleNews-vectors-negative300.bin\', binary=True)
 	'''
@@ -173,7 +173,7 @@ def visualize( guesses_data=None, cached_wikipedia=None, w2vmodel=None, question
 	frame = None
 
 	# save data into frames
-	for i in range (0, DATA_ROWS, 1):
+	for i in range (0, rows, 1):
 		value = values[i]
 		answer = value[1]
 		qnum = value[3]
@@ -181,8 +181,10 @@ def visualize( guesses_data=None, cached_wikipedia=None, w2vmodel=None, question
 		sentence = value[5]
 		token = value[6]
 		if token == last_token:
+			# print([ answer, score ])
 			frame.append( [ answer, score ] )
 		else:
+			# print('frame')
 			frames.append( frame )
 			question_text = questions_lookup[qnum].text
 			question_text_so_far = ''
@@ -203,6 +205,12 @@ def visualize( guesses_data=None, cached_wikipedia=None, w2vmodel=None, question
 			vectors=[]
 			for j in range(1, len(frame)):
 				answer = unnormalize_wikipedia_title(frame[j][0])
+
+				# fix some titles so wikipedia model can find the page
+				if ( answer == 'Orange'):
+					answer = 'Orange (color)'
+				if ( answer == 'Java (programming language)'):
+					answer = 'Java'
 				wiki_page = cached_wikipedia[answer]
 				wikipedia_words = getWords( wiki_page.content )
 				wikipedia_word_vectors = []
@@ -213,7 +221,10 @@ def visualize( guesses_data=None, cached_wikipedia=None, w2vmodel=None, question
 						not_in_vocab.append(word)
 					wikipedia_word_vectors.append( wikipedia_word_vector )
 				vector = numpy.array(wikipedia_word_vectors).mean(axis=0)
-				vectors.append(vector)
+				if ( not numpy.isnan(vector).any()): # only add word_vector if it exists
+					vectors.append(vector)
+				else:
+					print('nan vector ' + answer)
 
 			# shift vectors to center around top guess
 			top_guess = numpy.copy( vectors[0] )
@@ -229,7 +240,7 @@ def visualize( guesses_data=None, cached_wikipedia=None, w2vmodel=None, question
 			vectors.append( strut )
 			vectors2d = reduce_to_2d(numpy.array(vectors))
 			vectors2d = vectors2d[:-1].copy() # remove strut
-			print( vectors2d )
+			# print( vectors2d )
 
 			# add 2d vector to each guess info array
 			for k in range(0, len(vectors2d)):
