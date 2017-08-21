@@ -182,14 +182,14 @@ def visualize( guesses_data=None, cached_wikipedia=None, w2vmodel=None, question
 		token = value[6]
 		if token == last_token:
 			# print([ answer, score ])
-			frame.append( [ answer, score ] )
+			frame.append( [ answer, round( score, 4 ) ] )
 		else:
 			# print('frame')
 			frames.append( frame )
 			question_text = questions_lookup[qnum].text
 			question_text_so_far = ''
 			for m in range(0,sentence):
-				question_text_so_far += question_text[m]
+				question_text_so_far += question_text[m] + ' '
 			question_text_so_far += get_number_of_words( question_text[sentence], token )
 			frame = [question_text_so_far]
 			last_token = token
