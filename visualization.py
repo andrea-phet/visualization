@@ -209,8 +209,18 @@ def visualize( guesses_data=None, cached_wikipedia=None, w2vmodel=None, question
 		not_in_vocab = []
 		for frame in frames:
 
+			question_text_in_frame = frame[0]
+			question_words = getWords( question_text_in_frame )
+			question_word_vectors = []
+			for word in question_words:
+				try:
+					question_word_vector = w2vmodel.wv[word]
+				except:
+					not_in_vocab.append(word)
+				question_word_vectors.append(question_word_vector)
+
 			# find word2vectors for each guess, and fit PCA model on them
-			vectors=[]
+			vectors = [ numpy.array(question_word_vectors).mean(axis=0) ]
 			for j in range(1, len(frame)):
 				answer = unnormalize_wikipedia_title(frame[j][0])
 
@@ -243,13 +253,13 @@ def visualize( guesses_data=None, cached_wikipedia=None, w2vmodel=None, question
 			vectors2d = reduce_to_2d(numpy.array(vectors))
 
 			# shift vectors to center around top guess
-			top_guess = numpy.copy( vectors2d[0] )
+			question_mean_vector = numpy.copy( vectors2d[0] )
 			for k in range(0, len(vectors2d)):
-				vectors2d[k] = numpy.subtract( vectors2d[k], top_guess )
+				vectors2d[k] = numpy.subtract( vectors2d[k], question_mean_vector )
 
 			# add 2d vector to each guess info array
-			for k in range(0, len(vectors2d)):
-				frame[k+1].append(vectors2d[k])
+			for k in range(1, len(vectors2d)):
+				frame[k].append(vectors2d[k])
 		# print( 'Not in vocab: ' + str(not_in_vocab) )
 	else:
 		use_wikipedia = False
